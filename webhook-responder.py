@@ -99,6 +99,7 @@ class GitlabHandler(BaseHTTPRequestHandler):
         Sends back an HTTP 200 response
         """
 
+        logging.debug('Sending 200 response to GitLab')
         message = b'OK'
         self.send_response(200)
         self.send_header('Content-type', 'text')
