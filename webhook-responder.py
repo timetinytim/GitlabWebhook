@@ -3,6 +3,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import argparse
+import logging
 
 def some_function():
     print("some_function got called")
@@ -10,9 +11,9 @@ def some_function():
 def create_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-v", "--verbose", default=0,
-                        help="increase output verbosity")
-    parser.add_argument("-p", "--port", help="port to listen on", default=8000)
+    parser.add_argument('-v', '--verbose', default=0,
+                        help='increase output verbosity')
+    parser.add_argument('-p', '--port', help='port to listen on', default=8000)
 
     return parser
 
@@ -21,8 +22,8 @@ class GitlabHandler(BaseHTTPRequestHandler):
     def _set_response(self):
         message = b'OK'
         self.send_response(200)
-        self.send_header("Content-type", "text")
-        self.send_header("Content-length", str(len(message)))
+        self.send_header('Content-type', 'text')
+        self.send_header('Content-length', str(len(message)))
         self.end_headers()
         self.wfile.write(message)
 
@@ -47,15 +48,29 @@ class GitlabHandler(BaseHTTPRequestHandler):
             text['changes']['state']['current'] == 'merged'):
 
             # Need to invoke things
-            print("awesome")
+            print('awesome')
 
         if self.path == '/captureImage':
             # Insert your code here
             some_function()
 
-# Get args
-parser = create_args()
-args = parser.parse_args()
+if (__name__ == '__main__'):
+    # Get args
+    parser = create_args()
+    args = parser.parse_args()
 
-httpd = HTTPServer(('', args.port), GitlabHandler)
-httpd.serve_forever()
+    # Set logging level
+    if (args.verbose):
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    # Run the server
+    logging.info("Starting httpd...\n")
+    httpd = HTTPServer(('', args.port), GitlabHandler)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    logging.info("Stopping httpd...\n")
+    httpd.server_close()
