@@ -17,6 +17,29 @@ def create_args():
 
     return parser
 
+def process_push():
+    logging.warn('push functionality not implemented')
+
+def process_tag_push():
+    logging.warn('tag_push functionality not implemented')
+
+def process_issue():
+    logging.warn('issue functionality not implemented')
+
+def process_note():
+    logging.warn('note functionality not implemented')
+
+def process_merge_request():
+    logging.warn('merge_request functionality not implemented')
+
+def process_wiki_page():
+    logging.warn('wiki_page functionality not implemented')
+
+def process_pipeline():
+    logging.warn('pipeline functionality not implemented')
+
+def process_build():
+    logging.warn('build functionality not implemented')
 
 class GitlabHandler(BaseHTTPRequestHandler):
     def _set_response(self):
@@ -27,6 +50,23 @@ class GitlabHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(message)
 
+    def _process_request(self, request_kind):
+        # Request type -> function links
+        switches = {
+            'push':          process_push,
+            'tag_push':      process_tag_push,
+            'issue':         process_issue,
+            'note':          process_note,
+            'merge_request': process_merge_request,
+            'wiki_page':     process_wiki_page,
+            'pipeline':      process_pipeline,
+            'build':         process_build
+        }
+
+        # Run the correct function for the request type
+        func = switches.get(request_kind, lambda: logging.error("Invalid request: %s", request_kind))
+        func()
+
     def do_POST(self):
 
         # Extract the JSON
@@ -36,23 +76,11 @@ class GitlabHandler(BaseHTTPRequestHandler):
         self._set_response()
 
         # Parse the JSON
-        text = json.loads(data_string)
+        request = json.loads(data_string)
+        logging.info("Got request from project %s", request['project']['name'])
 
-        # Make sure it's what we want
-        if (text['project']['name'] != 'pfc-2019-website') :
-            print("Unknown project: %s" % text.project.name)
-            exit(1)
-
-        # We are looking for completed merge requests
-        if (text['object_kind'] == 'merge_request' and
-            text['changes']['state']['current'] == 'merged'):
-
-            # Need to invoke things
-            print('awesome')
-
-        if self.path == '/captureImage':
-            # Insert your code here
-            some_function()
+        # Send off to the proper function
+        self._process_request(request['object_kind'])
 
 if (__name__ == '__main__'):
     # Get args
