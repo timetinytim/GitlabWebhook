@@ -2,11 +2,22 @@
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import argparse
 
 def some_function():
     print("some_function got called")
 
-class MyHandler(BaseHTTPRequestHandler):
+def create_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-v", "--verbose", default=0,
+                        help="increase output verbosity")
+    parser.add_argument("-p", "--port", help="port to listen on", default=8000)
+
+    return parser
+
+
+class GitlabHandler(BaseHTTPRequestHandler):
     def _set_response(self):
         message = b'OK'
         self.send_response(200)
@@ -42,5 +53,9 @@ class MyHandler(BaseHTTPRequestHandler):
             # Insert your code here
             some_function()
 
-httpd = HTTPServer(('', 8000), MyHandler)
+# Get args
+parser = create_args()
+args = parser.parse_args()
+
+httpd = HTTPServer(('', args.port), GitlabHandler)
 httpd.serve_forever()
