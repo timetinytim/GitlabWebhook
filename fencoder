@@ -1,0 +1,55 @@
+#!/bin/bash
+set -e
+
+COMMAND=$0
+
+help() {
+	echo "fencoder - FFmpeg wrapper for automatically encoding video files"
+	echo
+	echo "Usage: $COMMAND [FILES] [OPTIONS]"
+	echo
+	echo "Options:"
+	echo "   -a --analyze    Only analyze the video files, don't encode"
+	echo "   -r              Look in subdirectories for video files"
+}
+
+find_files() {
+	echo "Here we go"
+	for file in $@ ; do
+		echo "File: $file"
+	done
+}
+
+main() {
+	local analyze="false"
+	local recursive="false"
+	declare -a files
+
+	# Parse CLI options
+	for opt in $@ ; do
+		if [[ $opt =~ ^-.* ]]; then
+			case $opt in
+				"-a" | "--analyze")
+					analyze="true"
+					;;
+				"-r")
+					recursive="true"
+					;;
+				"-h" | "--help")
+					help
+					exit
+					;;
+				*)
+					echo "ERROR: unknown option: $opt"
+					exit 1
+					;;
+			esac
+		else
+			files+=($opt)
+		fi
+	done
+
+	files=$(find_files "${files[@]}")
+}
+
+main "$@"
