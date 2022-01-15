@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
-## Command running variables
+## Operational variables
 COMMAND=$0
 RECURSIVE="false"
 ANALYZE="false"
+DEPENDENCIES=("jq")
 
 SUPPORTED_FILES="mkv mp4"
 
@@ -17,6 +18,19 @@ help() {
 	echo "Options:"
 	echo "   -a --analyze    Only analyze the video files, don't encode"
 	echo "   -r --recursive  Look in subdirectories for video files"
+}
+
+# Checks that we have access to all required tools.
+check_dependencies() {
+	set +e
+	for dep in "${DEPENDENCIES[@]}"; do
+		which $dep
+		if [ $? -ne 0 ]; then
+			echo "ERROR: dependency not installed: $dep"
+			exit 1
+		fi
+	done
+	set -e
 }
 
 ## Checks the initial provided file list to make sure we can find all the files,
@@ -59,8 +73,18 @@ expand_dirs() {
 	done
 }
 
+analyze() {
+	echo "Analyzing $1..."
+}
+
+encode() {
+	echo "Encoding $1..."
+}
+
 main() {
 	declare -a input_files
+
+	check_dependencies
 
 	# Parse CLI options
 	for opt in $@ ; do
@@ -97,9 +121,20 @@ main() {
 	# Expand out directories
 	declare -a files
 	expand_dirs "${input_files[@]}"
+
+	# Analyze each file
 	for file in "${files[@]}"; do
-		echo "THIS ONE: $file"
+		analyze $file
 	done
+	if [ "$ANALYZE" == "true" ]; then
+		exit
+	fi
+
+	# Encode each file
+	for file in "${files[@]}"; do
+		encode $file
+	done
+
 }
 
 main "$@"
