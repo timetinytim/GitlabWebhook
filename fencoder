@@ -5,9 +5,24 @@ set -e
 COMMAND=$0
 RECURSIVE="false"
 ANALYZE="false"
+OVERWRITE="false"
 DEPENDENCIES=("jq")
 
 SUPPORTED_FILES="mkv mp4"
+
+## FFmpeg variables
+FFMPEG_COMMAND="ffmpeg"
+FFMPEG_DEFAULTS="-n -hide_banner -map_metadata 0 -map_chapters 0"
+
+FFMPEG_H264_CODEC="libx264"
+FFMPEG_H264_OPTIONS="-preset veryslow -tune film -fast-pskip 0 -partitions p8x8 -deblock -2:-2"
+FFMPEG_H264_PARAMS="ref=5:bframes=5:output-depth=10:lookahead_threads=8"
+FFMPEG_H264_CRF=22
+
+FFMPEG_H265_CODEC="libx265"
+FFMPEG_H265_OPTIONS="-pix_fmt yuv420p10le -profile:v main10 -preset slower"
+FFMPEG_H265_PARAMS="qcomp=0.7:psy-rdoq=5:psy-rd=3"
+FFMPEG_H265_CRF=23
 
 ## Prints help text.
 help() {
@@ -18,13 +33,14 @@ help() {
 	echo "Options:"
 	echo "   -a --analyze    Only analyze the video files, don't encode"
 	echo "   -r --recursive  Look in subdirectories for video files"
+	echo "      --overwrite  Overwrite existing analysis files"
 }
 
 # Checks that we have access to all required tools.
 check_dependencies() {
 	set +e
 	for dep in "${DEPENDENCIES[@]}"; do
-		which $dep
+		which $dep >/dev/null
 		if [ $? -ne 0 ]; then
 			echo "ERROR: dependency not installed: $dep"
 			exit 1
@@ -65,7 +81,9 @@ expand_dirs() {
 				files+=($file)
 			fi
 		elif [ -d $file ]; then
-			expand_dirs $file/*
+			if [ "$(basename "$file")" != "fencoder" ]; then
+				expand_dirs $file/*
+			fi
 		else
 			echo "ERROR: file not found: $file"
 			exit 1
@@ -73,8 +91,30 @@ expand_dirs() {
 	done
 }
 
+## Processes file through FFmpeg to gather all information about the given video
+## file, and create a .env file with all the things we found.
 analyze() {
 	echo "Analyzing $1..."
+	local output=""
+
+	local file=$(basename "$1")
+	local parentdir="$(dirname "$1")"
+	local fenc_dir=${parentdir}/fencoder
+	local env_file=${fenc_dir}/"${file%.*}".env
+
+	mkdir -p $fenc_dir
+
+	# Check if we've already analyzed
+	if [ -f $env_file ]; then
+		if [ "$OVERWRITE" == "false" ]; then
+			echo "    File already analyzed"
+		else
+			rm $env_file
+		fi
+	fi
+
+	# Add tracks
+	output+=$(printf "# Tracks\n")
 }
 
 encode() {
@@ -95,6 +135,9 @@ main() {
 					;;
 				"-r" | "--recursive")
 					RECURSIVE="true"
+					;;
+				"--overwrite")
+					OVERWRITE="true"
 					;;
 				"-h" | "--help")
 					help
@@ -134,7 +177,6 @@ main() {
 	for file in "${files[@]}"; do
 		encode $file
 	done
-
 }
 
 main "$@"
