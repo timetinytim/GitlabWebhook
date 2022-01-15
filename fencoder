@@ -1,39 +1,76 @@
 #!/bin/bash
 set -e
 
+## Command running variables
 COMMAND=$0
+RECURSIVE="false"
+ANALYZE="false"
 
+SUPPORTED_FILES="mkv mp4"
+
+## Prints help text.
 help() {
 	echo "fencoder - FFmpeg wrapper for automatically encoding video files"
 	echo
-	echo "Usage: $COMMAND [FILES] [OPTIONS]"
+	echo "Usage: $FENCODER_COMMAND [FILES] [OPTIONS]"
 	echo
 	echo "Options:"
 	echo "   -a --analyze    Only analyze the video files, don't encode"
-	echo "   -r              Look in subdirectories for video files"
+	echo "   -r --recursive  Look in subdirectories for video files"
 }
 
-find_files() {
-	echo "Here we go"
-	for file in $@ ; do
-		echo "File: $file"
+## Checks the initial provided file list to make sure we can find all the files,
+## and make sure all given files are supported.
+check_input_files() {
+	for file in "${input_files[@]}"; do
+		if [ -f $file ]; then
+			ext="${file##*.}"
+			if [[ $SUPPORTED_FILES != *"$ext"* ]]; then
+				echo "ERROR: unsupported video file: $file"
+				exit 1
+			fi
+		elif [ -d $file ]; then
+			if [ "$RECURSIVE" == "false" ]; then
+				echo "ERROR: input is a directory: $file"
+				echo "Use -r to scan recursively"
+				exit 1
+			fi
+		else
+			echo "ERROR: file not found: $file"
+			exit 1
+		fi
+	done
+}
+
+## Recursively expands out any directories we were given.
+expand_dirs() {
+	for file in $@; do
+		ext="${file##*.}"
+		if [ -f $file ]; then
+			if [[ $SUPPORTED_FILES == *"$ext"* ]]; then
+				files+=($file)
+			fi
+		elif [ -d $file ]; then
+			expand_dirs $file/*
+		else
+			echo "ERROR: file not found: $file"
+			exit 1
+		fi
 	done
 }
 
 main() {
-	local analyze="false"
-	local recursive="false"
-	declare -a files
+	declare -a input_files
 
 	# Parse CLI options
 	for opt in $@ ; do
 		if [[ $opt =~ ^-.* ]]; then
 			case $opt in
 				"-a" | "--analyze")
-					analyze="true"
+					ANALYZE="true"
 					;;
-				"-r")
-					recursive="true"
+				"-r" | "--recursive")
+					RECURSIVE="true"
 					;;
 				"-h" | "--help")
 					help
@@ -45,11 +82,24 @@ main() {
 					;;
 			esac
 		else
-			files+=($opt)
+			input_files+=($opt)
 		fi
 	done
 
-	files=$(find_files "${files[@]}")
+	if [ ${#input_files[@]} -eq 0 ]; then
+		echo "ERROR: no input files given"
+		exit 1
+	fi
+
+	# Initial check of provided files
+	check_input_files
+
+	# Expand out directories
+	declare -a files
+	expand_dirs "${input_files[@]}"
+	for file in "${files[@]}"; do
+		echo "THIS ONE: $file"
+	done
 }
 
 main "$@"
