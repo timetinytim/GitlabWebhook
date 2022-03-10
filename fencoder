@@ -59,13 +59,7 @@ check_input_files() {
 				echo "ERROR: unsupported video file: $file"
 				exit 1
 			fi
-		elif [ -d $file ]; then
-			if [ "$RECURSIVE" == "false" ]; then
-				echo "ERROR: input is a directory: $file"
-				echo "Use -r to scan recursively"
-				exit 1
-			fi
-		else
+		elif [ ! -f $file ] && [ ! -d $file ]; then
 			echo "ERROR: file not found: $file"
 			exit 1
 		fi
@@ -81,8 +75,10 @@ expand_dirs() {
 				files+=($file)
 			fi
 		elif [ -d $file ]; then
-			if [ "$(basename "$file")" != "fencoder" ]; then
-				expand_dirs $file/*
+			if [ "$RECURSIVE" == "true" ]; then
+				if [ "$(basename "$file")" != "fencoder" ]; then
+					expand_dirs $file/*
+				fi
 			fi
 		else
 			echo "ERROR: file not found: $file"
@@ -99,10 +95,7 @@ analyze() {
 
 	local file=$(basename "$1")
 	local parentdir="$(dirname "$1")"
-	local fenc_dir=${parentdir}/fencoder
 	local env_file=${fenc_dir}/"${file%.*}".env
-
-	mkdir -p $fenc_dir
 
 	# Check if we've already analyzed
 	if [ -f $env_file ]; then
