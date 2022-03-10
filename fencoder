@@ -95,7 +95,7 @@ analyze() {
 
 	local file=$(basename "$1")
 	local parentdir="$(dirname "$1")"
-	local env_file=${fenc_dir}/"${file%.*}".env
+	local env_file=${parentdir}/"${file}".env
 
 	# Check if we've already analyzed
 	if [ -f $env_file ]; then
