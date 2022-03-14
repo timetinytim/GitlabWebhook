@@ -1,0 +1,31 @@
+{
+  "name": "fencoder",
+  "version": "1.0.0",
+  "description": "Video encoder script utilizing FFmpeg for encoding video automatically to a subjective \"best\" quality standard.",
+  "main": "app.js",
+  "type": "module",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "test",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@gitlab.tigeroptic.com:2242/fibrekitty/fencoder.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "encoding"
+  ],
+  "author": "Tim Campbell <timetinytim@gmail.com> (https://tigeroptic.com)",
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.11.0"
+  }
+}
